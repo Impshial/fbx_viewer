@@ -55,7 +55,7 @@ Both side panels resize by dragging their inner border. Their toolbar buttons co
 - Click a loaded material input for unlit Map view and its thumbnail. RGB/R/G/B/A buttons inspect individual channels using the original UVs. Known channel labels describe the renderer's material input; unknown packing is not inferred.
 - The importer resolves embedded images, references beneath the FBX directory (including `.fbm` folders), and textures beneath the currently opened asset folder. An explicitly located texture folder is also reused for subsequent assets during the session.
 - Missing references display their expected names. **Locate Texture Folder** retries unresolved references together. Duplicate matches require a choice in the material inspector.
-- Vertex colors are enabled when imported. Some game assets use vertex colors as custom shader masks. Disable **Vertex colors** in the material inspector to inspect those assets without the mask tint. This changes only the viewer.
+- When a base-color texture is assigned, **Vertex colors** defaults to off so shader-mask colors do not tint the texture. Materials without a base-color texture retain imported vertex colors. Use the material inspector toggle to override this per material; the choice survives view changes and texture recovery for the current asset. This changes only the viewer.
 - PNG, JPEG, WebP, BMP, GIF, TGA, and supported DDS textures can be loaded. TIFF references are identified but not decoded.
 
 ## Animation, lights, and background

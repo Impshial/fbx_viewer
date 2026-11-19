@@ -2,6 +2,13 @@
 
 Verification was intentionally limited to build checks and focused smoke checks for this development version.
 
+## 1.0.1 — textured material vertex colors
+
+- Textured materials now default to vertex colors off. Materials without a base-color texture retain their imported vertex colors. Per-material overrides survive view changes and texture recovery.
+- Type-check and production build: passed.
+- Focused visual check with `SM_Archery.fbx`: default Rendered colors were untinted after texture recovery; explicitly enabling vertex colors reproduced the red tint; disabling them restored the texture colors. The toggle survived Solid/Rendered/Map switches, with no renderer application errors.
+- Source FBX materials and vertex-color attributes remain unchanged.
+
 ## Run on Windows
 
 - TypeScript type-check: passed.

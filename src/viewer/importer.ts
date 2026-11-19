@@ -40,10 +40,16 @@ export async function loadTextureReference(ref: TextureReference, resource: Reso
     texture.dispose();
   } catch { ref.status = 'missing'; ref.error = `Cannot decode ${resource.name}`; }
 }
-export function describeMaterials(materials: THREE.Material[], refs: TextureReference[]): MaterialInfo[] {
+export function shouldUseVertexColors(material: THREE.Material, override?: boolean): boolean {
+  // Game assets can use vertex colors as shader masks rather than albedo.
+  // Prefer a referenced base-color texture unless the user explicitly opts in.
+  const hasBaseColorTexture = 'map' in material && material.map instanceof THREE.Texture;
+  return material.vertexColors && (override ?? !hasBaseColorTexture);
+}
+export function describeMaterials(materials: THREE.Material[], refs: TextureReference[], vertexColorOverrides = new Map<string, boolean>()): MaterialInfo[] {
   return materials.map(material => {
     const values = material as unknown as Record<string, unknown>;
-    return { id: material.uuid, name: material.name || 'Unnamed material', type: material.type.replace('Mesh', '').replace('Material', ''), material, hasVertexColors: material.vertexColors, vertexColorsEnabled: material.vertexColors,
+    return { id: material.uuid, name: material.name || 'Unnamed material', type: material.type.replace('Mesh', '').replace('Material', ''), material, hasVertexColors: material.vertexColors, vertexColorsEnabled: shouldUseVertexColors(material, vertexColorOverrides.get(material.uuid)),
       inputs: INPUTS.map(input => {
         const texture = values[input.key] as THREE.Texture | undefined;
         const reference = texture ? refs.find(ref => ref.texture === texture) : undefined;

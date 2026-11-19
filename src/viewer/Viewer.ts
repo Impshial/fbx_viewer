@@ -3,7 +3,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import type { ImportedModel } from './importer';
-import { cloneDisplayTexture, describeMaterials } from './importer';
+import { cloneDisplayTexture, describeMaterials, shouldUseVertexColors } from './importer';
 import type { Channel, InputKey, LightSettings, ModelInfo, Playback, ViewerEvents, ViewMode } from './types';
 
 interface LightEntry { settings: LightSettings; light: THREE.PointLight | THREE.DirectionalLight; handle: THREE.Group; icon: THREE.Mesh; arrow?: THREE.ArrowHelper; }
@@ -41,7 +41,7 @@ export class Viewer {
   private overlayEnabled = false;
   private mapSelection: { material: string; input: InputKey; channel: Channel } | null = null;
   private radius = 1;
-  private disabledVertexColors = new Set<string>();
+  private vertexColorOverrides = new Map<string, boolean>();
   playback: Playback = { clip: 0, playing: false, loop: true, speed: 1, time: 0, duration: 0 };
 
   constructor(private host: HTMLElement, private events: ViewerEvents) {
@@ -129,7 +129,7 @@ export class Viewer {
     if (previous) this.scene.remove(previous.root);
     if (this.skeleton) { this.scene.remove(this.skeleton); this.skeleton.dispose(); this.skeleton = null; }
     this.mixer?.stopAllAction(); if (previous) this.mixer?.uncacheRoot(previous.root);
-    this.model = model; this.meshes = []; this.originals.clear(); this.disabledVertexColors.clear();
+    this.model = model; this.meshes = []; this.originals.clear(); this.vertexColorOverrides.clear();
     model.root.traverse(node => {
       if ((node as THREE.Light).isLight || (node as THREE.Camera).isCamera) node.visible = false;
       if ((node as THREE.Mesh).isMesh) { const mesh = node as THREE.Mesh; this.meshes.push(mesh); this.originals.set(mesh.uuid, mesh.material); }
@@ -190,7 +190,7 @@ export class Viewer {
       const materials = Array.isArray(original) ? original : [original];
       const displayed = materials.map(material => {
         let display: THREE.Material = material;
-        if (this.mode === 'rendered' && this.disabledVertexColors.has(material.uuid)) { display = material.clone(); display.vertexColors = false; }
+        if (this.mode === 'rendered' && material.vertexColors && !shouldUseVertexColors(material, this.vertexColorOverrides.get(material.uuid))) { display = material.clone(); display.vertexColors = false; }
         if (this.mode === 'solid') display = new THREE.MeshStandardMaterial({ color: '#b7c0ca', roughness: 0.72, side: material.side });
         else if (this.mode === 'wireframe') display = new THREE.MeshBasicMaterial({ color: '#a6c6d0', wireframe: true, side: THREE.DoubleSide });
         else if (this.mode === 'map') {
@@ -222,8 +222,8 @@ export class Viewer {
       }
     }
   }
-  refreshMaterials() { if (!this.model) return []; this.model.materials = describeMaterials(this.model.materials.map(m => m.material), this.model.textures); this.model.materials.forEach(m => { m.material.needsUpdate = true; m.vertexColorsEnabled = m.hasVertexColors && !this.disabledVertexColors.has(m.id); }); this.applyMode(); return this.model.materials; }
-  setVertexColors(id: string, enabled: boolean) { enabled ? this.disabledVertexColors.delete(id) : this.disabledVertexColors.add(id); return this.refreshMaterials(); }
+  refreshMaterials() { if (!this.model) return []; this.model.materials = describeMaterials(this.model.materials.map(m => m.material), this.model.textures, this.vertexColorOverrides); this.model.materials.forEach(m => { m.material.needsUpdate = true; }); this.applyMode(); return this.model.materials; }
+  setVertexColors(id: string, enabled: boolean) { this.vertexColorOverrides.set(id, enabled); return this.refreshMaterials(); }
   getTextureReferences() { return this.model?.textures ?? []; }
   setClip(index: number) {
     const clip = this.model?.root.animations[index]; if (!clip || !this.mixer) return;
