@@ -1,0 +1,10 @@
+import { Pause, Play, Repeat2, RotateCcw, Bone } from 'lucide-react';
+import type { ModelInfo, Playback } from '../viewer/types';
+import type { Viewer } from '../viewer/Viewer';
+import { IconButton } from './Controls';
+export function Timeline({ model, playback, viewer, skeleton, onSkeleton }: { model: ModelInfo; playback: Playback; viewer: Viewer | null; skeleton: boolean; onSkeleton(value: boolean): void }) {
+  return <div className="timeline">
+    <div className="timeline-heading"><span className="eyebrow">Animation</span><select aria-label="Animation clip" value={playback.clip} onChange={event => viewer?.setClip(Number(event.target.value))}>{model.clips.map((clip, i) => <option key={i} value={i}>{clip.name}</option>)}</select><span className="clip-count">{model.clips.length} {model.clips.length === 1 ? 'clip' : 'clips'}</span><div className="spacer" />{model.hasSkeleton && <IconButton icon={Bone} label="Show skeleton" active={skeleton} onClick={() => onSkeleton(!skeleton)} />}</div>
+    <div className="timeline-controls"><IconButton icon={RotateCcw} label="Restart animation" onClick={() => viewer?.seek(0)} /><IconButton icon={playback.playing ? Pause : Play} label={playback.playing ? 'Pause animation' : 'Play animation'} onClick={() => viewer?.play(!playback.playing)} className="play-button" /><IconButton icon={Repeat2} label="Loop animation" active={playback.loop} onClick={() => viewer?.setLoop(!playback.loop)} /><span className="time-current">{playback.time.toFixed(2)}<small>s</small></span><input className="timeline-slider" type="range" aria-label="Animation timeline" min={0} max={playback.duration || 1} step={0.001} value={playback.time} onChange={event => viewer?.seek(Number(event.target.value))} /><span className="time-end">{playback.duration.toFixed(2)}s</span><select aria-label="Playback speed" value={playback.speed} onChange={event => viewer?.setSpeed(Number(event.target.value))}>{[0.25, 0.5, 1, 1.5, 2].map(speed => <option key={speed} value={speed}>{speed}×</option>)}</select></div>
+  </div>;
+}
